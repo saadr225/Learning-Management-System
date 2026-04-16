@@ -2,37 +2,39 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import LibraryPage from "./pages/LibraryPage";
+import PlayerPage from "./pages/PlayerPage";
 import PrivateRoute from "./components/PrivateRoute";
-
-// Placeholder — you'll replace this with a real dashboard later
-function Dashboard() {
-  const { user, logout } = require("./context/AuthContext").useAuth();
-  return (
-    <div style={{ padding: "2rem" }}>
-      <h1>Welcome, {user?.email}</h1>
-      <p>Role: {user?.role}</p>
-      <button onClick={logout}>Logout</button>
-    </div>
-  );
-}
 
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+
+          {/* Protected routes */}
           <Route
-            path="/dashboard"
+            path="/library"
             element={
               <PrivateRoute>
-                <Dashboard />
+                <LibraryPage />
               </PrivateRoute>
             }
           />
-          {/* Redirect root to login */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route
+            path="/player/:id"
+            element={
+              <PrivateRoute>
+                <PlayerPage />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Redirect root → library if logged in, else login handles it */}
+          <Route path="/" element={<Navigate to="/library" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
