@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import ReactPlayer from "react-player";
 import Navbar from "../components/Navbar";
 import { getVideo, getStreamUrl, formatDuration, Video } from "../api/videos";
+import { checkInWatchlist, addToWatchlist, removeFromWatchlist } from "../api/watchlist";
 
 export default function PlayerPage() {
   const { id } = useParams<{ id: string }>();
@@ -12,19 +13,22 @@ export default function PlayerPage() {
   const [streamUrl, setStreamUrl] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
 
     async function load() {
       try {
-        // Fetch metadata and stream URL in parallel
-        const [videoData, url] = await Promise.all([
+        const [videoData, url, watchlisted] = await Promise.all([
           getVideo(id!),
           getStreamUrl(id!),
+          checkInWatchlist(id!),
         ]);
         setVideo(videoData);
         setStreamUrl(url);
+        setInWatchlist(watchlisted);
       } catch (err: any) {
         const msg = err.response?.data?.error || "Failed to load video.";
         setError(msg);
@@ -35,6 +39,24 @@ export default function PlayerPage() {
 
     load();
   }, [id]);
+
+  async function handleWatchlistToggle() {
+    if (!id) return;
+    setWatchlistLoading(true);
+    try {
+      if (inWatchlist) {
+        await removeFromWatchlist(id);
+        setInWatchlist(false);
+      } else {
+        await addToWatchlist(id);
+        setInWatchlist(true);
+      }
+    } catch {
+      alert("Failed to update watchlist.");
+    } finally {
+      setWatchlistLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -82,6 +104,23 @@ export default function PlayerPage() {
           </button>
 
           <h1 style={styles.title}>{video.title}</h1>
+          <button
+            onClick={handleWatchlistToggle}
+            disabled={watchlistLoading}
+            style={{
+              padding: "0.5rem 1.25rem",
+              backgroundColor: inWatchlist ? "transparent" : "#2563eb",
+              color: inWatchlist ? "#ef4444" : "#fff",
+              border: inWatchlist ? "1px solid #ef4444" : "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              marginBottom: "1rem",
+            }}
+          >
+            {watchlistLoading ? "..." : inWatchlist ? "− Remove from Watchlist" : "+ Add to Watchlist"}
+          </button>
 
           <div style={styles.meta}>
             <span style={styles.duration}>

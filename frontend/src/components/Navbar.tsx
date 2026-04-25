@@ -19,6 +19,7 @@ export default function Navbar() {
 
       <div style={styles.links}>
         <Link to="/library" style={styles.link}>Browse</Link>
+        <Link to="/watchlist" style={styles.link}>Watchlist</Link>
         {user?.role === "admin" && (
           <Link to="/admin" style={styles.link}>Admin</Link>
         )}
