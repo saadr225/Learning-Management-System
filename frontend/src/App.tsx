@@ -6,6 +6,8 @@ import LibraryPage from "./pages/LibraryPage";
 import PlayerPage from "./pages/PlayerPage";
 import PrivateRoute from "./components/PrivateRoute";
 import WatchlistPage from "./pages/WatchlistPage";
+import AdminPage from "./pages/AdminPage";
+import AdminRoute from "./components/AdminRoute";
 
 export default function App() {
   return (
@@ -41,6 +43,14 @@ export default function App() {
               </PrivateRoute>
             }
           />
+          <Route
+  path="/admin"
+  element={
+    <AdminRoute>
+      <AdminPage />
+    </AdminRoute>
+  }
+/>
 
           {/* Redirect root → library if logged in, else login handles it */}
           <Route path="/" element={<Navigate to="/library" replace />} />
