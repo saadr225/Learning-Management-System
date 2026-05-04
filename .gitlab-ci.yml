@@ -1,0 +1,127 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# LMS GitLab CI/CD Pipeline
+#
+# Stages:
+#   test   → runs on every push and MR
+#   deploy → runs only when merging/pushing to `main`
+#
+# Required GitLab CI/CD Variables (Settings → CI/CD → Variables):
+#   JWT_SECRET            — same value as in your .env
+#   JWT_REFRESH_SECRET    — same value as in your .env
+#   AUTH_MONGO_URI        — full Atlas connection string
+#   VIDEO_MONGO_URI       — full Atlas connection string
+#   WATCHLIST_MONGO_URI   — full Atlas connection string
+#   AWS_ACCESS_KEY_ID     — your IAM key
+#   AWS_SECRET_ACCESS_KEY — your IAM secret
+#   AWS_S3_BUCKET         — lms-videos-bucket-657306716880-eu-north-1-an
+#   AWS_REGION            — eu-north-1
+#   EC2_HOST              — your EC2 public IP or domain (add when ready)
+#   EC2_USER              — ubuntu (or ec2-user, depending on AMI)
+#   EC2_SSH_KEY           — contents of your EC2 .pem file (add when ready)
+# ─────────────────────────────────────────────────────────────────────────────
+
+stages:
+  - test
+  - deploy
+
+# ── Shared anchor: install Python + deps for a service ───────────────────────
+.python_base: &python_base
+  image: python:3.11-slim
+  before_script:
+    - pip install --upgrade pip
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TEST STAGE
+# ─────────────────────────────────────────────────────────────────────────────
+
+lint-auth:
+  <<: *python_base
+  stage: test
+  script:
+    - pip install -r services/auth-service/requirements.txt
+    - pip install flake8
+    - flake8 services/auth-service --max-line-length=120 --exclude=venv
+
+lint-video:
+  <<: *python_base
+  stage: test
+  script:
+    - pip install -r services/video-service/requirements.txt
+    - pip install flake8
+    - flake8 services/video-service --max-line-length=120 --exclude=venv
+
+lint-watchlist:
+  <<: *python_base
+  stage: test
+  script:
+    - pip install -r services/watchlist-service/requirements.txt
+    - pip install flake8
+    - flake8 services/watchlist-service --max-line-length=120 --exclude=venv
+
+lint-admin:
+  <<: *python_base
+  stage: test
+  script:
+    - pip install -r services/admin-service/requirements.txt
+    - pip install flake8
+    - flake8 services/admin-service --max-line-length=120 --exclude=venv
+
+lint-frontend:
+  image: node:20-alpine
+  stage: test
+  script:
+    - cd frontend
+    - npm ci
+    - npx tsc --noEmit        # TypeScript type-check
+  cache:
+    key: frontend-node-modules
+    paths:
+      - frontend/node_modules/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DEPLOY STAGE — only runs on main branch
+# ─────────────────────────────────────────────────────────────────────────────
+
+deploy-to-ec2:
+  stage: deploy
+  image: alpine:latest
+  only:
+    - main
+  before_script:
+    # Install SSH client
+    - apk add --no-cache openssh-client
+    # Write the private key to a file
+    - mkdir -p ~/.ssh
+    - echo "$EC2_SSH_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    # Disable host key checking (safe for automation; EC2 IPs can change)
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+  script:
+    # 1. Copy the repo to EC2 (or just run docker compose pull if using a registry)
+    # 2. Write the .env file on the server from CI variables
+    # 3. Pull latest images and restart
+    - |
+      ssh $EC2_USER@$EC2_HOST "
+        set -e
+        cd /home/$EC2_USER/lms
+
+        # Recreate .env from CI/CD variables
+        cat > .env <<'EOF'
+      JWT_SECRET=${JWT_SECRET}
+      JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      AUTH_MONGO_URI=${AUTH_MONGO_URI}
+      VIDEO_MONGO_URI=${VIDEO_MONGO_URI}
+      WATCHLIST_MONGO_URI=${WATCHLIST_MONGO_URI}
+      AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      AWS_REGION=${AWS_REGION}
+      VIDEO_SERVICE_URL=http://video-service:5002
+      EOF
+
+        # Pull latest code
+        git pull origin main
+
+        # Rebuild and restart (--build ensures images are rebuilt)
+        docker compose up -d --build
+      "

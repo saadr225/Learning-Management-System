@@ -1,0 +1,134 @@
+version: "3.9"
+
+# All containers share this network so they can reach each other by name
+networks:
+  lms-network:
+    driver: bridge
+
+services:
+
+  # ── Auth Service ─────────────────────────────────────────────────────────
+  auth-service:
+    build: ./services/auth-service
+    container_name: lms-auth
+    restart: unless-stopped
+    networks:
+      - lms-network
+    environment:
+      MONGO_URI: ${AUTH_MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      FLASK_ENV: development
+      PORT: "5001"
+    expose:
+      - "5001" # only reachable inside lms-network (not on host)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── Video Service ────────────────────────────────────────────────────────
+  video-service:
+    build: ./services/video-service
+    container_name: lms-video
+    restart: unless-stopped
+    networks:
+      - lms-network
+    environment:
+      MONGO_URI: ${VIDEO_MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      AWS_REGION: ${AWS_REGION}
+      FLASK_ENV: development
+      PORT: "5002"
+    expose:
+      - "5002"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5002/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── Watchlist Service ────────────────────────────────────────────────────
+  watchlist-service:
+    build: ./services/watchlist-service
+    container_name: lms-watchlist
+    restart: unless-stopped
+    networks:
+      - lms-network
+    environment:
+      MONGO_URI: ${WATCHLIST_MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      VIDEO_SERVICE_URL: ${VIDEO_SERVICE_URL}
+      FLASK_ENV: development
+      PORT: "5003"
+    expose:
+      - "5003"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5003/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── Admin Service ────────────────────────────────────────────────────────
+  admin-service:
+    build: ./services/admin-service
+    container_name: lms-admin
+    restart: unless-stopped
+    networks:
+      - lms-network
+    environment:
+      AUTH_MONGO_URI: ${AUTH_MONGO_URI}
+      VIDEO_MONGO_URI: ${VIDEO_MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      VIDEO_SERVICE_URL: ${VIDEO_SERVICE_URL}
+      FLASK_ENV: development
+      PORT: "5004"
+    expose:
+      - "5004"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5004/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── React Frontend ───────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lms-frontend
+    restart: unless-stopped
+    networks:
+      - lms-network
+    expose:
+      - "3000"
+
+  # ── HAProxy API Gateway ──────────────────────────────────────────────────
+  haproxy:
+    build: ./haproxy
+    container_name: lms-haproxy
+    restart: unless-stopped
+    networks:
+      - lms-network
+    ports:
+      - "80:80" # API gateway + frontend
+      - "8404:8404" # HAProxy stats dashboard
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      video-service:
+        condition: service_healthy
+      watchlist-service:
+        condition: service_healthy
+      admin-service:
+        condition: service_healthy
+      frontend:
+        condition: service_started
