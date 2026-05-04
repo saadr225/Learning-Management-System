@@ -71,7 +71,7 @@ export default function AdminPage() {
   }
 
   async function handleDelete(v: AdminVideoRow) {
-    if (!confirm(`Delete "${v.title}"?`)) return;
+    if (!window.confirm(`Delete "${v.title}"?`)) return;
     try {
       await adminDeleteVideo(v.id);
       await refresh();
