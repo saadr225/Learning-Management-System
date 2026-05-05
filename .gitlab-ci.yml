@@ -17,7 +17,7 @@
 #   AWS_REGION            — eu-north-1
 #   EC2_HOST              — your EC2 public IP or domain (add when ready)
 #   EC2_USER              — ubuntu (or ec2-user, depending on AMI)
-#   EC2_SSH_KEY           — contents of your EC2 .pem file (add when ready)
+#   EC2_SSH_KEY           — Base64-encoded contents of your EC2 .pem file
 # ─────────────────────────────────────────────────────────────────────────────
 
 stages:
@@ -92,7 +92,7 @@ deploy-to-ec2:
     - apk add --no-cache openssh-client
     # Write the private key to a file
     - mkdir -p ~/.ssh
-    - echo "$EC2_SSH_KEY" > ~/.ssh/id_rsa
+    - echo "$EC2_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     # Disable host key checking (safe for automation; EC2 IPs can change)
     - echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
