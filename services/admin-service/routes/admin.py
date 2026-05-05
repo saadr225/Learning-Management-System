@@ -3,7 +3,6 @@ from functools import wraps
 
 import jwt
 import requests as http
-from bson import ObjectId
 from flask import Blueprint, jsonify, request, current_app
 
 admin_bp = Blueprint("admin", __name__)
@@ -150,4 +149,4 @@ def proxy_video_mutations(video_id: str):
         resp = forward_video("PATCH", f"/{video_id}", json=request.get_json(silent=True) or {})
     else:
         resp = forward_video("DELETE", f"/{video_id}")
-    return (resp.text, resp.status_code, {"Content-Type": resp.headers.get("Content-Type", "application/json")})
+    return (resp.text, resp.status_code, {"Content-Type": resp.headers.get("Content-Type", "application/json")})
