@@ -1,6 +1,5 @@
 import boto3
 import os
-import uuid
 
 
 def get_s3_client():
@@ -81,4 +80,4 @@ def delete_s3_object(s3_key: str) -> None:
     """Delete a file from S3 — called when a video record is deleted."""
     s3 = get_s3_client()
     bucket = os.environ["AWS_S3_BUCKET"]
-    s3.delete_object(Bucket=bucket, Key=s3_key)
+    s3.delete_object(Bucket=bucket, Key=s3_key)

@@ -1,6 +1,4 @@
 from flask import Blueprint, request, jsonify, current_app
-from bson import ObjectId
-from datetime import datetime, timezone
 import jwt
 import os
 import requests as http
@@ -138,4 +136,4 @@ def check_watchlist(video_id: str):
     user_id = request.current_user["user_id"]
 
     entry = db.watchlist.find_one({"user_id": user_id, "video_id": video_id})
-    return jsonify({"in_watchlist": entry is not None}), 200
+    return jsonify({"in_watchlist": entry is not None}), 200

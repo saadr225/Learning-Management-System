@@ -36,4 +36,4 @@ def public_video(video: dict) -> dict:
         "is_published": video["is_published"],
         "created_at": video["created_at"].isoformat(),
         "updated_at": video["updated_at"].isoformat(),
-    }
+    }

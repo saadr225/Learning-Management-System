@@ -15,4 +15,4 @@ def public_entry(entry: dict) -> dict:
         "user_id": entry["user_id"],
         "video_id": entry["video_id"],
         "added_at": entry["added_at"].isoformat(),
-    }
+    }

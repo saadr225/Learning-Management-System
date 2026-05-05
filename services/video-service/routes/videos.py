@@ -4,6 +4,12 @@ from datetime import datetime, timezone
 import jwt
 import os
 from models.video import create_video_document, public_video
+from s3 import (
+    generate_upload_url,
+    generate_stream_url,
+    generate_thumbnail_upload_url,
+    delete_s3_object,
+)
 
 videos_bp = Blueprint("videos", __name__)
 
@@ -210,15 +216,6 @@ def delete_video(video_id: str):
     db.videos.delete_one({"_id": oid})
     return jsonify({"message": "Video deleted"}), 200
 
-# ── S3 Routes — add these below the existing DELETE route ────────────────────
-
-from s3 import (
-    generate_upload_url,
-    generate_stream_url,
-    generate_thumbnail_upload_url,
-    delete_s3_object,
-)
-
 
 @videos_bp.route("/<video_id>/upload-url", methods=["POST"])
 @require_auth
@@ -319,4 +316,4 @@ def get_stream_url(video_id: str):
     return jsonify({
         "stream_url": stream_url,
         "expires_in_seconds": 3600,
-    }), 200
+    }), 200
