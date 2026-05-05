@@ -103,7 +103,7 @@ deploy-to-ec2:
     - |
       ssh $EC2_USER@$EC2_HOST "
         set -e
-        cd /home/$EC2_USER/lms
+        cd /home/$EC2_USER/LMS
 
         # Recreate .env from CI/CD variables
         cat > .env <<'EOF'
