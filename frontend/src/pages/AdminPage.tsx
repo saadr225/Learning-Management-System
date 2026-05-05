@@ -70,6 +70,19 @@ export default function AdminPage() {
     }
   }
 
+  async function extractDuration(file: File): Promise<number> {
+    return new Promise((resolve) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        resolve(Math.round(video.duration || 0));
+      };
+      video.onerror = () => resolve(0);
+      video.src = URL.createObjectURL(file);
+    });
+  }
+
   async function handleDelete(v: AdminVideoRow) {
     if (!window.confirm(`Delete "${v.title}"?`)) return;
     try {
@@ -85,8 +98,17 @@ export default function AdminPage() {
     const contentType = file.type || "video/mp4";
     setUploadingId(v.id);
     try {
+      // Get exact video duration from file metadata before upload
+      const durationSeconds = await extractDuration(file);
+      
       const { upload_url } = await adminGetUploadUrl(v.id, contentType);
       await uploadFileToS3(upload_url, file, contentType);
+      
+      // Update duration on the backend once uploaded successfully
+      if (durationSeconds > 0) {
+        await adminPatchVideo(v.id, { duration_seconds: durationSeconds });
+      }
+      
       await refresh();
       alert("Upload complete. Publish the video when ready.");
     } catch (e: any) {
@@ -229,9 +251,9 @@ export default function AdminPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div style={{ background: "#fff", borderRadius: 8, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
-      <div style={{ fontSize: 12, color: "#64748b" }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700 }}>{value}</div>
+    <div style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", border: "1px solid #f1f5f9" }}>
+      <div style={{ fontSize: 13, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", marginTop: "0.5rem" }}>{value}</div>
     </div>
   );
 }
@@ -242,12 +264,14 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
       type="button"
       onClick={onClick}
       style={{
-        padding: "8px 14px",
-        borderRadius: 6,
-        border: "1px solid #e2e8f0",
-        background: active ? "#1e293b" : "#fff",
-        color: active ? "#fff" : "#334155",
+        padding: "10px 18px",
+        borderRadius: 8,
+        border: active ? "1px solid #0f172a" : "1px solid #cbd5e1",
+        background: active ? "#0f172a" : "#fff",
+        color: active ? "#fff" : "#475569",
         cursor: "pointer",
+        fontWeight: 600,
+        transition: "all 0.2s",
       }}
     >
       {children}
@@ -257,49 +281,67 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 
 const card: React.CSSProperties = {
   background: "#fff",
-  borderRadius: 8,
-  padding: 20,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  borderRadius: 12,
+  padding: "2rem",
+  boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+  border: "1px solid #f1f5f9",
   display: "flex",
   flexDirection: "column",
-  gap: 10,
+  gap: 16,
 };
 
 const input: React.CSSProperties = {
-  border: "1px solid #e2e8f0",
-  borderRadius: 6,
-  padding: "8px 10px",
+  border: "1px solid #cbd5e1",
+  borderRadius: 8,
+  padding: "10px 14px",
   fontSize: 14,
+  outline: "none",
 };
 
 const primaryBtn: React.CSSProperties = {
   alignSelf: "flex-start",
-  padding: "10px 18px",
-  background: "#2563eb",
+  padding: "10px 20px",
+  background: "#0f172a",
   color: "#fff",
   border: "none",
-  borderRadius: 6,
+  borderRadius: 8,
   cursor: "pointer",
   fontWeight: 600,
+  marginTop: "0.5rem",
 };
 
 const secondaryBtn: React.CSSProperties = {
   marginLeft: "auto",
-  padding: "8px 14px",
+  padding: "8px 16px",
   background: "#fff",
-  border: "1px solid #e2e8f0",
-  borderRadius: 6,
+  border: "1px solid #cbd5e1",
+  borderRadius: 8,
   cursor: "pointer",
+  fontWeight: 600,
+  color: "#0f172a",
 };
 
 const smallBtn: React.CSSProperties = {
-  padding: "4px 10px",
+  padding: "8px 12px",
   fontSize: 12,
+  fontWeight: 600,
   borderRadius: 6,
-  border: "1px solid #e2e8f0",
+  border: "1px solid #cbd5e1",
   background: "#fff",
   cursor: "pointer",
 };
 
-const th: React.CSSProperties = { padding: "8px 6px", color: "#64748b", fontWeight: 600 };
-const td: React.CSSProperties = { padding: "10px 6px", verticalAlign: "middle" };
+const th: React.CSSProperties = {
+  padding: "16px 12px",
+  fontWeight: 600,
+  color: "#475569",
+  fontSize: 13,
+  textTransform: "uppercase",
+  letterSpacing: "0.5px",
+};
+
+const td: React.CSSProperties = {
+  padding: "16px 12px",
+  color: "#0f172a",
+  fontWeight: 500,
+};

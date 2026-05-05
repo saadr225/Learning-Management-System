@@ -6,6 +6,7 @@ dist/
 .venv/
 venv/
 frontend/node_modules/
+frontend/build/
 services/auth-service/.env
 services/admin-service/.env
 services/video-service/.env
