@@ -1,5 +1,6 @@
 import boto3
 import os
+from botocore.config import Config
 
 
 def get_s3_client():
@@ -8,6 +9,8 @@ def get_s3_client():
         region_name=os.environ["AWS_REGION"],
         aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
         aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+        endpoint_url=f"https://s3.{os.environ['AWS_REGION']}.amazonaws.com",
+        config=Config(signature_version="s3v4")
     )
 
 
@@ -80,4 +83,4 @@ def delete_s3_object(s3_key: str) -> None:
     """Delete a file from S3 — called when a video record is deleted."""
     s3 = get_s3_client()
     bucket = os.environ["AWS_S3_BUCKET"]
-    s3.delete_object(Bucket=bucket, Key=s3_key)
+    s3.delete_object(Bucket=bucket, Key=s3_key)
