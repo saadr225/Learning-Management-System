@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Video } from "./videos";
 
-const BASE = "http://localhost:5004/admin";
+const BASE = "/api/admin";
 
 function authHeader() {
   const t = localStorage.getItem("access_token");

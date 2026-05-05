@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Video } from "./videos";
 
-const BASE_URL = "http://localhost:5003/watchlist";
+const BASE_URL = "/api/watchlist";
 
 export interface WatchlistEntry {
   id: string;

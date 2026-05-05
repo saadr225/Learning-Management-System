@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:5001/auth";
+const BASE_URL = "/api/auth";
 
 export interface AuthUser {
   id: string;

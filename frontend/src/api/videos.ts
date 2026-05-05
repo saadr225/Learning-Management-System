@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:5002/videos";
+const BASE_URL = "/api/videos";
 
 export interface Video {
   id: string;
