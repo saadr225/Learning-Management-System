@@ -76,7 +76,7 @@ All containers communicate over a shared Docker bridge network (`lms-network`). 
 - Videos are uploaded **directly from the browser to S3** via presigned URLs — the service never handles video bytes
 - Full-text search index on `title` and `description`
 - MongoDB collection: `lms_videos.videos`
-- S3 bucket: `lms-videos-bucket-657306716880-eu-north-1-an` (region: `eu-north-1`)
+- S3 bucket: `lms-videos-bucket-657306716880-eu-north-1-an` (region: `eu-north-1` using explicit `s3v4` endpoints to satisfy AWS strict regional routing rules)
 
 ---
 
@@ -113,6 +113,7 @@ All admin endpoints require a valid JWT with `role: admin`.
 
 - Reads directly from both `lms_auth` and `lms_videos` MongoDB databases
 - Write operations (create, update, delete, upload) are **proxied** to the Video Service to keep business logic centralized
+- Has the `/auth/register` API mapped to allow Admins to securely add new Admins directly from the admin panel.
 
 ---
 
@@ -163,6 +164,8 @@ Built with **React 19 + TypeScript + Tailwind CSS v4 + React Router v7**.
 | `PrivateRoute` | Redirects unauthenticated users to `/login` |
 | `AdminRoute` | Redirects non-admin users away from `/admin` |
 
+The entire frontend UI uses a unified, modern style system emphasizing slate grays, soft blues, rounded borders, and clean typography. The Admin dashboard can dynamically extract video duration times directly from HTML5 file metadata in the browser before dispatching it to S3/backend.
+
 ### API Layer (`/frontend/src/api`)
 
 | File | Wraps |
@@ -179,11 +182,12 @@ Built with **React 19 + TypeScript + Tailwind CSS v4 + React Router v7**.
 | Layer | Technology |
 |---|---|
 | Frontend | React 19, TypeScript, Tailwind CSS v4, React Router v7, React Player, Axios |
-| Backend | Python 3.11, Flask, PyMongo, PyJWT, bcrypt, Flask-CORS |
+| Backend | Python 3.11, Flask, PyMongo, PyJWT, bcrypt, Flask-CORS, boto3 |
 | Database | MongoDB Atlas (3 separate databases) |
-| Storage | AWS S3 (presigned URLs — direct browser upload/stream) |
+| Storage | AWS S3 (pre-signed URLs — direct browser upload/stream. Signature Version `s3v4` configured for `eu-north-1`) |
 | API Gateway | HAProxy 2.8 (path-based routing, health checks, stats) |
 | Containers | Docker + Docker Compose v3.9 |
+| Memory limits | Node `--max-old-space-size=4096` configured for frontend builds |
 | CI/CD | GitLab CI/CD (lint → deploy to AWS EC2) |
 
 ---
