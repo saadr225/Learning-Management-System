@@ -37,7 +37,7 @@ export default function AdminPage() {
       setUsers(u);
       setVideos(v);
     } catch {
-      setError("Failed to load admin data. Is the admin service running on :5004?");
+      setError("Failed to load admin data.");
     } finally {
       setLoading(false);
     }

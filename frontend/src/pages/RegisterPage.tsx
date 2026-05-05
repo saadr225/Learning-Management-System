@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [role, setRole] = useState("user");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -28,9 +29,9 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const data = await registerUser(email, password);
+      const data = await registerUser(email, password, role);
       login(data.access_token, data.refresh_token!, data.user);
-      navigate("/dashboard");
+      navigate("/library");
     } catch (err: any) {
       const msg = err.response?.data?.error || "Registration failed. Try again.";
       setError(msg);
@@ -76,6 +77,16 @@ export default function RegisterPage() {
             required
             style={styles.input}
           />
+
+          <label style={styles.label}>Role</label>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            style={styles.input}
+          >
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
 
           <button type="submit" disabled={loading} style={styles.button}>
             {loading ? "Creating account..." : "Register"}

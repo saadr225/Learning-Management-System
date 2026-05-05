@@ -20,7 +20,7 @@ export default function LoginPage() {
     try {
       const data = await loginUser(email, password);
       login(data.access_token, data.refresh_token!, data.user);
-      navigate("/dashboard");
+      navigate("/library");
     } catch (err: any) {
       const msg = err.response?.data?.error || "Login failed. Try again.";
       setError(msg);
